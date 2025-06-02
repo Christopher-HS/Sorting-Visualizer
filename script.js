@@ -2,6 +2,8 @@ import SortArea from "./sortArea.js"
 import Bar from "./bar.js"
 import BarHandler from "./barHandler.js"
 import selectionSort from "./selectionSort.js"
+import { states } from "./state.js"
+import {InputManager, inputs} from "./input.js"
 
 
 const canvas  = document.getElementById("canvas")
@@ -22,7 +24,21 @@ const sortHeight = 600;
 
 let arr = [];
 let barArray = []
-const barHandler = new BarHandler(barArray)
+
+const startButton = document.getElementById("startBtn")
+const pauseButton = document.getElementById("pauseBtn")
+const nextButton = document.getElementById("nextBtn")
+pauseButton.onclick = function(){
+    input.setLastInput(inputs.PAUSE);
+}
+startButton.onclick = function(){
+    input.setLastInput(inputs.START);
+}
+nextButton.onclick = function(){
+    input.setLastInput(inputs.NEXT);
+}
+const input = new InputManager();
+const barHandler = new BarHandler(barArray, input)
 const area = new SortArea(sortWidth, sortHeight, (width-sortWidth)/2,(height-sortHeight)/2, barHandler)
 for (let i = 0; i < numElements; i++) {
     const height = generateRandInt(10,maxBarHeight)
@@ -31,13 +47,9 @@ for (let i = 0; i < numElements; i++) {
     const bar = new Bar(barWidth, height, area.posX+barSpacing*(i+1)+barWidth*i, area.posY+(sortHeight-height)-barSpacing)
     barArray[i]=bar;
 }
-console.log(arr)
-
 const animation = selectionSort(arr)
-
 barHandler.animation = animation
 
-console.log(animation)
 
 
 
