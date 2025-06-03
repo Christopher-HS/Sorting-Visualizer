@@ -16,10 +16,11 @@ export default class Bar{
     }
     move(posX){
         this.x = posX
-        //const speed = 0.1
-        //if(Math.abs(posX-this.x)>0.5){
-        //    this.x+=(posX-this.x)*speed
-        //}
+    }
+    resize(posY){
+        this.height+=this.y-posY
+        this.y = posY
+        
     }
     update(context){
         this.draw(context)

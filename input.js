@@ -2,6 +2,7 @@ export const inputs = {
     START:"start",
     PAUSE:"pause",
     NEXT:"next",
+    SHUFFLE:"shuffle",
     NONE:"none"
 }
 
