@@ -11,13 +11,20 @@ export const globals = {
     height: innerHeight-25,
     sortWidth: 1000,
     sortHeight: 600,
-    numElements:30
+    numElements:25,
+    sortArea:{
+        borderValue: 0.4,
+        valueTolerance: 0.3
+    }
 }
+
+export const maxBarHeight = globals.sortHeight-10
+export const minBarHeight = 20
 const canvas  = document.getElementById("canvas")
 const ctx = canvas.getContext("2d")
 
-const maxBarHeight = globals.sortHeight-10;
-const barSpacing = 1/globals.numElements+4;
+
+export const barSpacing = 1/globals.numElements+4;
 canvas.width = globals.width
 canvas.height = globals.height
 canvas.style.background="black"
@@ -26,8 +33,7 @@ canvas.style.background="black"
 
 
 
-let arr = [];
-let barArray = []
+
 
 const startButton = document.getElementById("startBtn")
 const pauseButton = document.getElementById("pauseBtn")
@@ -46,19 +52,12 @@ shuffleButton.onclick = function(){
     input.setLastInput(inputs.SHUFFLE);
 }
 const input = new InputManager();
-const barHandler = new BarHandler(barArray, input)
-const area = new SortArea(globals.sortWidth, globals.sortHeight, (globals.width-globals.sortWidth)/2,(globals.height-globals.sortHeight)/2, barHandler)
-for (let i = 0; i < globals.numElements; i++) {
-    const height = utils.generateRandInt(20,maxBarHeight)
-    arr[i] = height;
-    const barWidth = (globals.sortWidth-(globals.numElements+1)*barSpacing)/globals.numElements
-    const bar = new Bar(barWidth, height, area.posX+barSpacing*(i+1)+barWidth*i, area.posY+(globals.sortHeight-height)-barSpacing)
-    barArray[i]=bar;
-}
-const animation = selectionSort(arr)
-barHandler.animation = animation
 
+const area = new SortArea(globals.sortWidth, globals.sortHeight, (globals.width-globals.sortWidth)/2,(globals.height-globals.sortHeight)/2, input)
 
+const animation = selectionSort(area.arr)
+area.barHandler.animation = animation
+console.log(animation)
 
 
 animate()
@@ -67,9 +66,10 @@ animate()
 function animate(){
     ctx.clearRect(0,0,globals.width,globals.height)
     area.update(ctx)
-    barArray.forEach(bar=>{
+    area.barHandler.bars.forEach(bar=>{
         bar.update(ctx)
     })
+    
     requestAnimationFrame(animate)
 }
 

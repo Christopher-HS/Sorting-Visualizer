@@ -14,6 +14,7 @@ export class InputManager{
     }
     setLastInput(input){
         this.lastInput = input
+        
     }
     
 } 

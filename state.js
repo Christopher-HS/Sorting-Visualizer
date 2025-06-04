@@ -1,6 +1,6 @@
 import * as utils from "./utils.js";
 import {InputManager} from "./input.js";
-import { globals } from "./script.js";
+import { globals,minBarHeight,maxBarHeight } from "./script.js";
 import selectionSort from "./selectionSort.js";
 export const states = {
     IDLE: 0, 
@@ -20,24 +20,24 @@ function performAnimation(state){
     const prevFrame = state.barHandler.animation[state.barHandler.step-1]
 
     if(state.barHandler.step>0&&prevFrame.type=="compare"){
-        state.barHandler.bars[prevFrame.c2].setColour("white")
+        state.barHandler.bars[prevFrame.c2].setColour(state.barHandler.bars[prevFrame.c2].baseColour)
     }
     switch(frame.type){
         case "compare":
             console.log("comparing index "+ frame.c1 + " and "+frame.c2)
             state.barHandler.bars[frame.c1].setColour("red")
-            state.barHandler.bars[frame.c2].setColour("grey")
+            state.barHandler.bars[frame.c2].setColour("white")
             break
 
         case "minimum":
             console.log("Found minimum with index "+ frame.m)
             state.barHandler.bars[frame.m].setColour("red")
-            state.barHandler.bars[frame.o].setColour("white")
+            state.barHandler.bars[frame.o].setColour(state.barHandler.bars[frame.o].baseColour)
             break
 
         case "swap":
             if(frame.s1==frame.s2){
-                state.barHandler.bars[frame.s1].setColour("green")
+                state.barHandler.bars[frame.s1].setColour(state.barHandler.bars[frame.s1].baseColour)
             }
             else{
                 console.log("swapping index "+ frame.s1+ " and "+frame.s2)
@@ -61,33 +61,28 @@ export class Idle extends State{
         console.log("Idle")
     }
     update(){
-        if(this.inputManager.lastInput=="next"){
+        if(this.inputManager.lastInput=="next" && this.barHandler.step<this.barHandler.animation.length-1 ){
+            console.log("next")
+            this.inputManager.setLastInput("none")
             performAnimation(this)
-
-            if(this.barHandler.step<this.barHandler.animation.length-1){
-                this.inputManager.setLastInput("none")
-                this.barHandler.step++
-            }
-            else{
-                this.barHandler.currentState = this.barHandler.states[states.IDLE]
-                this.barHandler.currentState.enter()
-            }
+            this.barHandler.step++
             
         }
-        else if(this.inputManager.lastInput=="start"){
+        else if(this.inputManager.lastInput=="start" && this.barHandler.step<this.barHandler.animation.length-1){
+            console.log("ehhlo")
             this.barHandler.currentState = this.barHandler.states[states.ITERATING]
             this.barHandler.currentState.enter()
         }
         else if(this.inputManager.lastInput=="shuffle"){
-            this.barHandler.bars.forEach(bar => {
-                bar.setColour("white")
-            });
+
             this.barHandler.step=0;
             this.inputManager.lastInput="none"
+            const arr = utils.generateRandomArray(globals.numElements, minBarHeight, maxBarHeight)                        
             this.barHandler.currentState = this.barHandler.states[states.SHUFFLING]
-            const arr = utils.generateRandomArray(globals.numElements, 20, globals.sortHeight-10)
-            this.barHandler.currentState.array = arr
+
             this.barHandler.currentState.enter()
+            this.barHandler.currentState.array = arr
+
         }
     }
 }
@@ -110,7 +105,10 @@ export class Iterating extends State{
             this.barHandler.step++
         }
         else{
+            this.barHandler.step++
+
             this.barHandler.currentState = this.barHandler.states[states.IDLE]
+            this.inputManager.lastInput="none"
             this.barHandler.currentState.enter()
         }
         console.log(this.barHandler.step)
@@ -133,8 +131,8 @@ export class Swapping extends State{
         const frame = this.barHandler.animation[this.barHandler.step]
         this.desitnation1 = this.barHandler.bars[frame.s1].x
         this.desitnation2 = this.barHandler.bars[frame.s2].x
-        this.barHandler.bars[frame.s1].setColour("yellow")
-        this.barHandler.bars[frame.s2].setColour("green")
+        //this.barHandler.bars[frame.s1].setColour("rgb(255,75,65)")
+        this.barHandler.bars[frame.s2].setColour("rgb(70,170,50)")
     }
 
     update(){
@@ -147,7 +145,7 @@ export class Swapping extends State{
             b2.move(b2.x+(this.desitnation1-b2.x)*speed)
         }
         else{
-            this.barHandler.bars[frame.s1].setColour("white")
+            //this.barHandler.bars[frame.s1].setColour("white")
 
             if(this.barHandler.step<this.barHandler.animation.length){
                 this.barHandler.step++
@@ -155,6 +153,10 @@ export class Swapping extends State{
             const tmp = this.barHandler.bars[frame.s1];
             this.barHandler.bars[frame.s1] = this.barHandler.bars[frame.s2];
             this.barHandler.bars[frame.s2] = tmp;
+
+            this.barHandler.bars[frame.s1].setColour(this.barHandler.bars[frame.s1].baseColour)
+            this.barHandler.bars[frame.s2].setColour(this.barHandler.bars[frame.s2].baseColour)
+
             this.barHandler.currentState = this.previousState
             this.barHandler.currentState.enter()
             
@@ -164,15 +166,15 @@ export class Swapping extends State{
     }
 }
 export class Shuffling extends State{
-    constructor(barHandler){
+    constructor(barHandler, area){
         super("SHUFFLING")
         this.barHandler = barHandler;
         this.array = []
+        this.sortArea = area
 
     }
     enter(){
         console.log("Shuffling")
-
     }
 
     update(){
@@ -180,20 +182,26 @@ export class Shuffling extends State{
         for (let i = 0; i < this.barHandler.bars.length && this.barHandler.currentState!=this.barHandler.states[states.IDLE]; i++) {
             const bar = this.barHandler.bars[i];
             const newLocation = globals.height-(globals.height-globals.sortHeight)/2-this.array[i]
+            const newValue = ((globals.sortArea.borderValue+globals.sortArea.valueTolerance)-(globals.sortArea.borderValue-globals.sortArea.valueTolerance))*(this.array[i]-minBarHeight)/(maxBarHeight-minBarHeight)+(globals.sortArea.borderValue-globals.sortArea.valueTolerance)
 
-            if(Math.abs(newLocation-bar.y)>0.1){
+            if(Math.abs(newLocation-bar.y)>0.001 || Math.abs(newValue-bar.hsvColour.v)>0.001 ){
                 bar.resize(bar.y+(newLocation-bar.y)*speed)
-                console.log("ad")
+                bar.recolour(bar.hsvColour.v+(newValue-bar.hsvColour.v)*speed)
+
             }
+
             else{
-                console.log("hello")
+                console.log("here")
                 this.barHandler.currentState = this.barHandler.states[states.IDLE]
                 this.barHandler.animation = selectionSort(this.array)
+                this.barHandler.bars.forEach(bar => {
+                    bar.baseColour = bar.colour
+                });
                 this.barHandler.currentState.enter()
                 
             }
             //console.log("hello")
         }
-        console.log("shuff")
+        
     }
 }
